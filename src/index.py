@@ -121,12 +121,55 @@ def search_sample(es) -> None:
         print(obj)
 
 
+def inner_hits_sample(es) -> None:
+    query = {
+        "query": {
+            "bool": {
+                "should": [
+                    {
+                        "nested": {
+                            "path": "pets",
+                            "inner_hits": {
+                                "name": "gender",
+                                "size": 10,
+                            },
+                            "query": {"term": {"pets.gender": 1}},
+                        }
+                    }
+                ]
+            }
+        },
+        "fields": [
+            "id",
+            "name",
+            "age",
+            "pets.type",
+            "pets.gender",
+        ],
+        "_source": False,
+    }
+    res = es.search(
+        index=INDEX,
+        body=query,
+        size=999,
+    )
+
+    for r in res["hits"]["hits"]:
+        obj = r["fields"]
+        inner_hits_obj = r["inner_hits"]
+        print(obj)
+        for hit in inner_hits_obj["gender"]["hits"]["hits"]:
+            print(hit["_source"])
+
+
 def main() -> None:
     es = get_client()
 
     # create_index(es)
 
-    search_sample(es)
+    # search_sample(es)
+
+    inner_hits_sample(es)
 
 
 if __name__ == "__main__":
